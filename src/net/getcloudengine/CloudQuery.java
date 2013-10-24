@@ -35,7 +35,7 @@ public class CloudQuery {
 	 * while constructing that particular CloudObject  
 	 * 
 	 */
-	protected CloudQuery(String objName){
+	public CloudQuery(String objName){
 		this.collection = objName;
 	}
 	
@@ -49,6 +49,25 @@ public class CloudQuery {
 		public List<CloudObject> objects = null;
 	}
 
+	private CloudObject gettask(String id) throws CloudAuthException,
+													CloudException
+	{
+		String response, address = null;
+		CloudObject obj;
+		address = CloudEndPoints.retrieveCloudObject(collection, id);
+		try{
+			
+			response = CloudEngineUtils.httpRequest(address, HttpMethod.GET);
+			obj = new CloudObject(collection, new JSONObject(response));
+		}
+		
+		catch (JSONException e)
+		{
+			throw new CloudException("Invalid CloudObject received");
+		}
+		
+		return obj;
+	}
 	
 	private class GetTask extends AsyncTask<String, Void, GetResult> {
 		
@@ -61,31 +80,19 @@ public class CloudQuery {
 		
 		@Override
 		protected GetResult doInBackground(String... ids) {
-			
-			String response, address = null;
 			GetResult result = new GetResult();
-			
 			String id = ids[0];
-			address = CloudEndPoints.retrieveCloudObject(collection, id);
-			
 			try{
-				
-				response = CloudEngineUtils.httpRequest(address, HttpMethod.GET);
-				result.obj = new CloudObject(collection, new JSONObject(response));
+				result.obj = gettask(id);
 			}
 			catch (CloudAuthException e){
 				 result.exception = e;
-			}
-			catch (JSONException e)
-			{
-				result.exception = new CloudException("Invalid CloudObject received");
 			}
 			catch (CloudException e){
 				result.exception = e;
 			}
 			
 			return result;
-			
 				
 		}
 		
@@ -97,6 +104,41 @@ public class CloudQuery {
 	     }
 		
 	}
+	
+	private List<CloudObject> findtask() throws CloudAuthException, 
+											CloudException
+	{
+		String response= null, address = null;
+		JSONObject curr_obj;
+		CloudObject curr_cloud_obj;
+		
+		List<CloudObject> objList = new ArrayList<CloudObject>();
+		try{
+			
+			address = CloudEndPoints.queryCloudObject(collection);
+			Log.i(TAG, "Running query on server: " + queryObj.toString());
+			
+			Log.i(TAG, "connecting to endpoint : " + address);
+			address += "?query=" + URLEncoder.encode(queryObj.toString());
+			response = CloudEngineUtils.httpRequest(address, HttpMethod.GET);
+			Log.i(TAG, "query response received: "+ response);
+			JSONObject query_response = new JSONObject(response);
+			JSONArray arr = query_response.getJSONArray("result");
+			for(int i = 0; i < arr.length(); i++)
+			{
+				curr_obj = arr.getJSONObject(i);
+				curr_cloud_obj = new CloudObject(collection, curr_obj);
+				objList.add(curr_cloud_obj);
+				
+			}
+			
+		}
+		catch (JSONException e){
+			throw new CloudException("Invalid CloudObject received");
+		}
+		return objList;
+	}
+	
 	
 	private class FindTask extends AsyncTask<Void, Void, FindResult> {
 		
@@ -111,46 +153,17 @@ public class CloudQuery {
 		@Override
 		protected FindResult doInBackground(Void... args) {
 			
-			String response= null, address = null;
 			FindResult result = new FindResult();
-			Object curr_obj;
-			JSONObject curr_json;
-			CloudObject curr_cloud_obj;
-			
-			List<CloudObject> objList = new ArrayList<CloudObject>();
 			try{
-				
-				address = CloudEndPoints.queryCloudObject(collection);
-				Log.i(TAG, "Running query on server: " + queryObj.toString());
-				
-				Log.i(TAG, "connecting to endpoint : " + address);
-				address += "?query=" + URLEncoder.encode(queryObj.toString());
-				response = CloudEngineUtils.httpRequest(address, HttpMethod.GET);
-				Log.i(TAG, "query response received: "+ response);
-				JSONArray arr = new JSONArray(response);
-				for(int i = 0; i < arr.length(); i++)
-				{
-					curr_obj = arr.get(i);
-					curr_json  = new JSONObject(curr_obj.toString());
-					curr_cloud_obj = new CloudObject(collection, curr_json);
-					objList.add(curr_cloud_obj);
-					
-				}
-				
-				result.objects = objList;
+				result.objects = findtask();
 			}
 			catch (CloudAuthException e){
 				 result.exception = e;
 			}
 			catch (CloudException e){
 				result.exception = e;
-			}
-			catch (JSONException e){
-				result.exception = new CloudException("Invalid CloudObject received");
-			}
-			
+			}	
 			return result;
-				
 		}
 		
 		protected void onPostExecute(FindResult result) {
@@ -164,6 +177,23 @@ public class CloudQuery {
 	
 	/**
 	 * Run a query to retrieve a particular object whose objectId is already known.
+	 * This method fetches the object in the current thread.
+	 * 
+	 * @param objId Unique Id of the object assigned when the object was saved
+	 * 
+	 * @param callback The callback function that will be called after the
+	 * object has been retrieved. Exception information, if any, that occured 
+	 * during the operation will be passed to the callback function.
+	 * 
+	 */
+	public CloudObject get(String objId, GetCallback callback)
+							throws CloudAuthException, CloudException
+	{
+		return gettask(objId);
+	}
+	
+	/**
+	 * Run a query to retrieve a particular object whose objectId is already known.
 	 * This method fetches the object in a background thread.
 	 * 
 	 * @param objId Unique Id of the object assigned when the object was saved
@@ -173,7 +203,7 @@ public class CloudQuery {
 	 * during the operation will be passed to the callback function.
 	 * 
 	 */
-	public void get(String objId, GetCallback callback)
+	public void getInBackground(String objId, GetCallback callback)
 	{
 		GetTask task = new GetTask();
 		task.setCallback(callback);
@@ -191,11 +221,28 @@ public class CloudQuery {
 	 * during the operation will be passed to the callback function.
 	 * 
 	 */
-	public void find(FindCallback callback)
+	public void findInBackground(FindCallback callback)
 	{
 		FindTask task = new FindTask();
 		task.setCallback(callback);
 		task.execute();
+	}
+	
+	/**
+	 * Run a query to retrieve one or more CloudObjects satisfying all the
+	 * condition set in this query object. This method fetches the objects
+	 * in the current thread.
+	 * 
+	 * 
+	 * @param callback The callback function that will be called after the
+	 * objects have been retrieved. Exception information, if any, that occurred 
+	 * during the operation will be passed to the callback function.
+	 * 
+	 */
+	public List<CloudObject> find() throws CloudAuthException, 
+										CloudException
+	{
+		return findtask();
 	}
 	
 	/**
