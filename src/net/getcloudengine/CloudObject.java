@@ -21,7 +21,7 @@ import android.util.Log;
 public class CloudObject {
 	
 	private String name;
-	private String id = null;
+	private String _id = null;
 	private static final String TAG = "CloudEngineObject";
 	private JSONObject jsonObj = new JSONObject();
 	private static ConcurrentLinkedQueue<SaveTask> SaveQueue = 
@@ -90,7 +90,7 @@ public class CloudObject {
      */
 	public String getId()
 	{
-		return id;
+		return _id;
 	}
 	
 	/**
@@ -434,10 +434,10 @@ public class CloudObject {
 		String response =null, address = null;
 		HttpMethod method;
 		
-		if(id!=null)
+		if(_id!=null)
 		{
 			// Updating an existing object
-			address = CloudEndPoints.updateCloudObject(name, id);
+			address = CloudEndPoints.updateCloudObject(name, _id);
 			method = HttpMethod.PUT;
 		}
 		else{
@@ -448,7 +448,7 @@ public class CloudObject {
 		try{
 			response = CloudEngineUtils.httpRequest(address, method, jsonObj);
 			JSONObject obj = new JSONObject(response);
-			id = obj.getString("_id");
+			_id = obj.getString("_id");
 		}
 		catch (CloudAuthException e){
 			throw e;
@@ -465,7 +465,7 @@ public class CloudObject {
 	private void delete_object() throws CloudAuthException, 
 								CloudException{
 		
-		String address = CloudEndPoints.deleteCloudObject(name, id);
+		String address = CloudEndPoints.deleteCloudObject(name, _id);
 		try {
 			CloudEngineUtils.httpRequest(address, HttpMethod.DELETE);
 		} 
@@ -480,7 +480,7 @@ public class CloudObject {
 	
 	private CloudObject retrieve_object(){
 		
-		String address = CloudEndPoints.retrieveCloudObject(name, id);
+		String address = CloudEndPoints.retrieveCloudObject(name, _id);
 		String response = null;
 			response = CloudEngineUtils.httpRequest(address, 
 												HttpMethod.GET, jsonObj);
@@ -504,7 +504,6 @@ public class CloudObject {
 		public void setCallback(FetchCallback cbk){
 			callback = cbk;
 		}
-		
 		
 		@Override
 		protected FetchResult doInBackground(Void... args) {
@@ -531,7 +530,6 @@ public class CloudObject {
 	         }
 	     }
 	}
-	
 	
 	/**
 	 * Saves the object on the server in the current thread.
@@ -610,7 +608,7 @@ public class CloudObject {
 	public void delete() throws CloudException {
 		
 		Context ctx = CloudEngine.getContext();
-		if(id == null){
+		if(_id == null){
 			throw new CloudException("Invalid object. Save the object before deleting it.");
 		}
 		
@@ -639,7 +637,7 @@ public class CloudObject {
      */
 	public void deleteInBackground(){
 		
-		if(id == null){
+		if(_id == null){
 			throw new CloudException("Invalid object. Save the object before deleting it.");
 		}
 		
@@ -671,7 +669,7 @@ public class CloudObject {
      */
 	public void deleteInBackground(DeleteCallback callback){
 		
-		if(id == null){
+		if(_id == null){
 			throw new CloudException("Invalid object. Save the object before deleting it.");
 		}
 		
@@ -700,7 +698,7 @@ public class CloudObject {
      */
 	public CloudObject fetch() throws CloudException
 	{
-		if(id == null){
+		if(_id == null){
 			throw new CloudException("Invalid object. Save the object before fetching it.");
 		}
 		
@@ -730,7 +728,7 @@ public class CloudObject {
      */
 	public void fetchInBackground()
 	{
-		if(id == null){
+		if(_id == null){
 			throw new CloudException("Invalid object. Save the object before fetching it.");
 		}
 		Context ctx = CloudEngine.getContext();
@@ -760,7 +758,7 @@ public class CloudObject {
      */
 	public void fetchInBackground(FetchCallback callback)
 	{
-		if(id == null){
+		if(_id == null){
 			throw new CloudException("Invalid object. Save the object before fetching it.");
 		}
 		Context ctx = CloudEngine.getContext();
