@@ -46,7 +46,7 @@ public class CloudPushService extends IntentService {
 	 
 	 public SocketIO socket_call()
 	{
-			final String TAG = "Pushproject";
+			final String TAG = "CloudPushService";
 			String apikey = CloudEngineUtils.getApiKey();
 			SocketIO socket =  null;
 			try {
@@ -83,6 +83,7 @@ public class CloudPushService extends IntentService {
 							public void onError(SocketIOException arg0) {
 								
 								Log.e(TAG, "error in connecting" + arg0.getMessage());
+								arg0.printStackTrace();
 							}
 
 							@Override
