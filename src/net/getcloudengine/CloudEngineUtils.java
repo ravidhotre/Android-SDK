@@ -31,6 +31,9 @@ public class CloudEngineUtils {
 		return apikey;
 	}
 
+	public static String getAppId(){
+		return appId;
+	}
 
 	public static boolean isNetworkAvailable(Context ctx) {
 	    ConnectivityManager connectivityManager 

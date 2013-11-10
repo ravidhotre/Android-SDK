@@ -52,6 +52,8 @@ public class CloudPushService extends IntentService {
 			try {
 				String host = CloudEndPoints.socketServer;
 				socket = new SocketIO().addHeader("Authorization", "Token " + apikey);
+				String appId = CloudEngineUtils.getAppId();
+				socket.addHeader("AppId", appId);
 				socket.connect(host, new IOCallback(){
 
 							@Override
@@ -69,7 +71,6 @@ public class CloudPushService extends IntentService {
 							public void onConnect() {
 								
 								Log.d(TAG, "socket io connected to server");
-								
 							}
 
 							@Override
