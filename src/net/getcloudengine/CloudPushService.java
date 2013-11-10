@@ -7,6 +7,8 @@ import io.socket.SocketIO;
 import io.socket.SocketIOException;
 import java.net.MalformedURLException;
 import org.json.JSONObject;
+
+
 import android.app.IntentService;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -18,6 +20,7 @@ import android.util.Log;
 public class CloudPushService extends IntentService {
 
 	 static final String TAG = "CloudPushService";
+	 SocketIO socket =  null;
 	 
 	 public CloudPushService() {
 	      super("PushService");
@@ -25,10 +28,11 @@ public class CloudPushService extends IntentService {
 	 
 	 public void NotifyUser(String msg)
 		{
+		 String applicationName = getResources().getString(R.string.app_name);
 			NotificationCompat.Builder mBuilder =
 			        new NotificationCompat.Builder(this)
 			        .setSmallIcon(R.drawable.default_android_icon)
-			        .setContentTitle("Notification")
+			        .setContentTitle(applicationName)
 			        .setContentText(msg);
 	
 			PendingIntent resultPendingIntent = PendingIntent.getActivity(
@@ -48,9 +52,10 @@ public class CloudPushService extends IntentService {
 	{
 			final String TAG = "CloudPushService";
 			String apikey = CloudEngineUtils.getApiKey();
-			SocketIO socket =  null;
+			
 			try {
 				String host = CloudEndPoints.socketServer;
+				
 				socket = new SocketIO().addHeader("Authorization", "Token " + apikey);
 				String appId = CloudEngineUtils.getAppId();
 				socket.addHeader("AppId", appId);
@@ -77,7 +82,8 @@ public class CloudPushService extends IntentService {
 							public void onDisconnect() {
 								
 								Log.d(TAG, "socket io disconnected");
-								
+								socket = null;
+								stopSelf();
 							}
 
 							@Override
@@ -85,6 +91,9 @@ public class CloudPushService extends IntentService {
 								
 								Log.e(TAG, "error in connecting" + arg0.getMessage());
 								arg0.printStackTrace();
+								socket = null;
+								// todo: stop self only on critical errors such as timeout error
+								stopSelf();
 							}
 
 							@Override
@@ -113,7 +122,7 @@ public class CloudPushService extends IntentService {
 	 	
 	@Override
 	protected void onHandleIntent(Intent intent) {
-		Log.d(TAG, "Service initiated");
+		Log.d(TAG, "CloudPush Service initiated");
 		socket_call();
 	/*	synchronized (this){
 			try {
