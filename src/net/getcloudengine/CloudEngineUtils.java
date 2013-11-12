@@ -82,7 +82,7 @@ public class CloudEngineUtils {
 		String response = "";
 		
 		
-		if(apikey == null)
+		if(apikey == null || apikey == "")
 		{
 			throw new CloudAuthException("API key not available");
 		}
@@ -164,7 +164,7 @@ public class CloudEngineUtils {
 		HttpURLConnection connection = null;
 		byte[] buffer = new byte[FILE_BUFFER_SIZE];
 		
-		if(apikey == null)
+		if(apikey == null || apikey == "")
 		{
 			throw new CloudAuthException("API key not available");
 		}
