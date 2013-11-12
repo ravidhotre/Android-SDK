@@ -202,7 +202,7 @@ public class CloudObject {
 					"] not found");
 		
 		try {
-			return jsonObj.getDouble(name);
+			return jsonObj.getDouble(key);
 		} catch (JSONException e) {
 			throw new CloudObjectException("CloudEngineObject[" + JSONObject.quote(key) +
 					"] is not a number");
@@ -231,7 +231,7 @@ public class CloudObject {
 					"] not found");
 		
 		try {
-			return jsonObj.getInt(name);
+			return jsonObj.getInt(key);
 		} catch (JSONException e) {
 			throw new CloudObjectException("CloudEngineObject[" + JSONObject.quote(key) +
 					"] is not a int");
@@ -259,7 +259,7 @@ public class CloudObject {
 					"] not found");
 		
 		try {
-			return jsonObj.getString(name);
+			return jsonObj.getString(key);
 		} catch (JSONException e) {
 			throw new CloudObjectException("CloudEngineObject[" + JSONObject.quote(key) +
 					"] is not a string");
@@ -290,7 +290,7 @@ public class CloudObject {
 					"] not found");
 		
 		try {
-			return jsonObj.getJSONArray(name);
+			return jsonObj.getJSONArray(key);
 		} catch (JSONException e) {
 			throw new CloudObjectException("CloudEngineObject[" + JSONObject.quote(key) +
 					"] is not a JSONArray");
@@ -322,7 +322,7 @@ public class CloudObject {
 					"] not found");
 		
 		try {
-			return jsonObj.getLong(name);
+			return jsonObj.getLong(key);
 		} catch (JSONException e) {
 			throw new CloudObjectException("CloudEngineObject[" + JSONObject.quote(key) +
 					"] is not a long");
@@ -351,7 +351,7 @@ public class CloudObject {
 					"] not found");
 		
 		try {
-			return jsonObj.getJSONObject(name);
+			return jsonObj.getJSONObject(key);
 		} catch (JSONException e) {
 			throw new CloudObjectException("CloudEngineObject[" + JSONObject.quote(key) +
 					"] is not a JSONObject");
