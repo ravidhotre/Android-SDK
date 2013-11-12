@@ -56,10 +56,17 @@ public class CloudObject {
      *            
      * @param obj The JSON object from which to initialize object's
      * 				properties
+	 * @throws JSONException 
      * 
      */
-	public CloudObject(String name, JSONObject obj){
+	public CloudObject(String name, JSONObject obj) throws JSONException{
 		this.name = name;
+		if(obj.has("_id"))
+		{
+			_id = obj.getString("_id");
+			obj.remove("_id");
+		}
+		
 		this.jsonObj = obj;
 	}
 	
@@ -438,11 +445,14 @@ public class CloudObject {
 		{
 			// Updating an existing object
 			address = CloudEndPoints.updateCloudObject(name, _id);
+			Log.i(TAG, "Updating CloudObject at endpoint " + address);
 			method = HttpMethod.PUT;
 		}
 		else{
+			
 			// Saving a new object
 			address = CloudEndPoints.saveCloudObject(name);
+			Log.i(TAG, "Saving CloudObject at endpoint " + address);
 			method = HttpMethod.POST;
 		}
 		try{
