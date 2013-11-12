@@ -6,6 +6,8 @@ import io.socket.IOCallback;
 import io.socket.SocketIO;
 import io.socket.SocketIOException;
 import java.net.MalformedURLException;
+import java.util.ArrayList;
+
 import org.json.JSONObject;
 
 
@@ -21,6 +23,8 @@ public class CloudPushService extends IntentService {
 
 	 static final String TAG = "CloudPushService";
 	 SocketIO socket =  null;
+	 private static ArrayList<String> subscriptions = new ArrayList<String>();
+	 
 	 
 	 public CloudPushService() {
 	      super("PushService");
@@ -48,7 +52,7 @@ public class CloudPushService extends IntentService {
 		}
 	 
 	 
-	 public SocketIO socket_call()
+	 public SocketIO socket_call(String app_id)
 	{
 			final String TAG = "CloudPushService";
 			String apikey = CloudEngineUtils.getApiKey();
@@ -57,6 +61,7 @@ public class CloudPushService extends IntentService {
 				String host = CloudEndPoints.socketServer;
 				
 				socket = new SocketIO().addHeader("Authorization", "Token " + apikey);
+								
 				String appId = CloudEngineUtils.getAppId();
 				socket.addHeader("AppId", appId);
 				socket.connect(host, new IOCallback(){
@@ -123,7 +128,26 @@ public class CloudPushService extends IntentService {
 	@Override
 	protected void onHandleIntent(Intent intent) {
 		Log.d(TAG, "CloudPush Service initiated");
-		socket_call();
+		String app_id = null;
+		
+		 if (intent.hasExtra("AppId")) {
+			 	
+			 	app_id = intent.getExtras().getString("AppId");
+			 	Log.d(TAG, "starting push service for appid: " + app_id);
+			 	//Check if we are already subscribed to this channel
+			 	if(!subscriptions.contains(app_id))
+			 	{
+			 		subscriptions.add(app_id);
+			 		socket_call(app_id);
+			 	}
+			 	else{
+			 		Log.d(TAG, "Already subscribed for this app");
+			 	}
+		      
+		    }
+		
+		
+		
 	/*	synchronized (this){
 			try {
 				wait(3000);
