@@ -11,7 +11,8 @@ Clone the project in your (Eclipse) workspace.
 	git clone git@github.com:cloudengine/Android-SDK.git
 	
 Add the project as an Android library dependency to your application's project properties 
-from Eclipse.
+from Eclipse. If you're running CloudEngine on your own server, you'll need to change
+the server names in the CloudEngineEndPoints.java file.
 
 Technical Overview
 ===================
