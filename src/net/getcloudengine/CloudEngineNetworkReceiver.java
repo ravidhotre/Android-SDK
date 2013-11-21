@@ -9,23 +9,22 @@ import android.util.Log;
 
 public class CloudEngineNetworkReceiver extends BroadcastReceiver {
 
-	static final String TAG = "CloudEngineNetworkReceiver";
 	@Override
 	public void onReceive(Context context, Intent intent) {
 		 
-		Log.i(TAG, "Network state change broadcast received");
 		
 		if(!CloudEngineUtils.isNetworkAvailable(context))
     	{
-			Log.i(TAG, "Network not connected");
     		return;
     	}
 		else{
-			Log.i(TAG, "Network connected");
+			String app_id = CloudEngineUtils.getAppId();
+			CloudEngine.initPushService(app_id);
+	    	// Save all pending requests to server
+			CloudObject.syncServer();
+
 		}
     	
-    	// Save all pending requests to server
-		CloudObject.syncServer();		
 
 	}
 

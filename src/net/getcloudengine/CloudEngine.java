@@ -37,7 +37,7 @@ public class CloudEngine {
 	}
 	
 	
-	private static void initPushService(String app_id) {
+	public static void initPushService(String app_id) {
 		
 		//Check if push service is running
 		Log.d(TAG, "CloudEngine starting Push service");
