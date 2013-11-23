@@ -1,10 +1,8 @@
 
 package net.getcloudengine;
 
-import java.net.UnknownHostException;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedQueue;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;

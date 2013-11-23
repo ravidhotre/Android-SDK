@@ -30,6 +30,7 @@ public class CloudPushService extends Service {
 	  private ServiceHandler mServiceHandler;
 	  static final String TAG = "CloudPushService";
 	  SocketIO socket =  null;
+	  int notificationId = 3422;
 	  private static HashMap<String, SocketIO> subscriptions = new HashMap<String, SocketIO>();
 	  
 	  public void NotifyUser(String msg)
@@ -47,7 +48,7 @@ public class CloudPushService extends Service {
 			mBuilder.setContentIntent(resultPendingIntent);
 			NotificationManager mNotificationManager =
 				    (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-				int mId = 3422;
+				int mId = notificationId;
 				// mId allows you to update the notification later on.
 				mNotificationManager.notify(mId , mBuilder.build());
 			
@@ -98,7 +99,7 @@ public class CloudPushService extends Service {
 								@Override
 								public void onError(SocketIOException arg0) {
 									
-									Log.e(TAG, "error in connecting" + arg0.getMessage());
+									Log.e(TAG, "error in connecting. " + arg0.getMessage());
 									arg0.printStackTrace();
 									// todo: stop self only on critical errors such as timeout error
 									//stopSelf();

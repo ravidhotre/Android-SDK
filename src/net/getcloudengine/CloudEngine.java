@@ -3,6 +3,7 @@ import android.app.ActivityManager;
 import android.app.ActivityManager.RunningServiceInfo;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.util.Log;
 
 
@@ -14,8 +15,11 @@ public class CloudEngine {
 	
 	private static final String TAG = "CloudEngine";
 	private static Context app_context = null;
-	//private static Boolean authorized = false;
-
+	public static final String APP_ID = "AppId";
+	public static final String API_KEY = "AppKey";
+	public static final String PREFERENCE_FILE = "net.getcloudengine.PREFERENCE_FILE_KEY";
+	static String applicationName;
+	
 	/**
 	 * Initialize the Cloudengine library functions and services.
 	 * 
@@ -32,7 +36,28 @@ public class CloudEngine {
 		CloudEngineUtils.setApiKey(key);
 		CloudEngineUtils.setAppId(app_id);
 		app_context = ctx;
+		applicationName = ctx.getResources().getString(R.string.app_name);
 		initPushService(app_id);
+		//initDB();
+		saveCredentials();
+		
+	}
+	
+	private static void saveCredentials(){
+		
+		SharedPreferences sharedPref = app_context.getSharedPreferences(
+				PREFERENCE_FILE , app_context.MODE_PRIVATE);
+		
+		String apiKey = sharedPref.getString(API_KEY, null);
+		String appId = sharedPref.getString(APP_ID, null);
+		
+		if(apiKey == null || appId == null)
+		{
+			SharedPreferences.Editor editor = sharedPref.edit();
+			editor.putString(API_KEY, CloudEngineUtils.getApiKey());
+			editor.putString(APP_ID, CloudEngineUtils.getAppId());
+			editor.commit();
+		}
 		
 	}
 	
@@ -47,7 +72,6 @@ public class CloudEngine {
 		app_context.startService(intent);
 		return;
 		
-
 	}
 	
 
@@ -68,12 +92,4 @@ public class CloudEngine {
 	
 	
 }
-
-
-
-
-
-
-
-
 
