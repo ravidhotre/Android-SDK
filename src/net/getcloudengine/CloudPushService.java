@@ -6,6 +6,7 @@ import io.socket.IOCallback;
 import io.socket.SocketIO;
 import io.socket.SocketIOException;
 import java.net.MalformedURLException;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import org.json.JSONObject;
 import android.app.NotificationManager;
@@ -29,7 +30,7 @@ public class CloudPushService extends Service {
 	  private Looper mServiceLooper;
 	  private ServiceHandler mServiceHandler;
 	  static final String TAG = "CloudPushService";
-	  SocketIO socket =  null;
+	  int maxAttempts = 3;
 	  int notificationId = 3422;
 	  private static HashMap<String, SocketIO> subscriptions = new HashMap<String, SocketIO>();
 	  
@@ -60,9 +61,10 @@ public class CloudPushService extends Service {
 				String apikey = CloudEngineUtils.getApiKey();
 				
 				try {
+					
 					String host = CloudEndPoints.socketServer;
 					
-					socket = new SocketIO();
+					SocketIO socket = new SocketIO();
 					
 					subscriptions.put(app_id, socket);
 					
@@ -97,12 +99,12 @@ public class CloudPushService extends Service {
 								}
 
 								@Override
-								public void onError(SocketIOException arg0) {
+								public void onError(SocketIOException exception) {
 									
-									Log.e(TAG, "error in connecting. " + arg0.getMessage());
-									arg0.printStackTrace();
-									// todo: stop self only on critical errors such as timeout error
-									//stopSelf();
+									String msg = exception.getMessage();
+									Log.e(TAG, "Error in connecting. " + msg);
+									exception.printStackTrace();
+									
 								}
 
 								@Override
@@ -121,10 +123,12 @@ public class CloudPushService extends Service {
 							});
 						return socket;
 					
-				} catch (MalformedURLException e1) {
-					
-					e1.printStackTrace();
 				}
+				catch (Exception e)
+				{
+					e.printStackTrace();
+				}
+				
 				return null;
 			}
 
@@ -137,10 +141,40 @@ public class CloudPushService extends Service {
 		  
 	      @Override
 	      public void handleMessage(Message msg) {
-	    	  
+	    	  SocketIO socket = null;
 	    	  Bundle data = msg.getData();
 	    	  String app_id = data.getString("AppId");
-	    	  socket_call(app_id);
+	    	  int attempts = 0;
+	    	  while(attempts < maxAttempts)
+	    	  {
+	    		  Log.d(TAG, "trying to connect to socketio server...");
+	    		 socket  = socket_call(app_id);
+	    	  
+	  	    	 //Wait for either socket to be connected
+	  			 if(socket == null || !socket.isConnected())
+	  			 {
+	  				try {
+	  					Thread.sleep(3000);			// wait for 3 seconds
+	  				} catch (InterruptedException e) {
+	  				}
+	  			 }
+	  			
+	  			 // Still not connected?
+	  			 if(socket == null || !socket.isConnected()){
+	  				 Log.d(TAG, "Attempting again..");
+					attempts += 1;
+					continue;		// try again
+				}
+	  			 else{
+	  				 break;
+	  			 }
+	  			 
+	    	  }
+	    	  
+	    	  if(socket == null || !socket.isConnected()){
+	    		  Log.e(TAG, "Socket not connected. Giving up...");
+	    	  }
+	    	
 	      }
 	  }
 
