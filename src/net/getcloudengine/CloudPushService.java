@@ -32,6 +32,8 @@ public class CloudPushService extends Service {
 	  static final String TAG = "CloudPushService";
 	  int maxAttempts = 3;
 	  int notificationId = 3422;
+	  int attemptInterval = 60000;		// Around the same as heartbeat timeout of the server
+	  
 	  private static HashMap<String, SocketIO> subscriptions = new HashMap<String, SocketIO>();
 	  
 	  public void NotifyUser(String msg)
@@ -52,7 +54,7 @@ public class CloudPushService extends Service {
 				int mId = notificationId;
 				// mId allows you to update the notification later on.
 				mNotificationManager.notify(mId , mBuilder.build());
-			
+				
 		}
 	  
 	  public SocketIO socket_call(String app_id)
@@ -95,7 +97,7 @@ public class CloudPushService extends Service {
 								public void onDisconnect() {
 									
 									Log.d(TAG, "socket io disconnected");
-									//stopSelf();
+									
 								}
 
 								@Override
@@ -110,13 +112,11 @@ public class CloudPushService extends Service {
 								@Override
 								public void onMessage(String arg0, IOAcknowledge arg1) {
 									
-									Log.d(TAG, "text message received");
 								}
 
 								@Override
 								public void onMessage(JSONObject arg0, IOAcknowledge arg1) {
 									
-									Log.d(TAG, "json message received");
 									
 								}
 								
@@ -154,7 +154,7 @@ public class CloudPushService extends Service {
 	  			 if(socket == null || !socket.isConnected())
 	  			 {
 	  				try {
-	  					Thread.sleep(3000);			// wait for 3 seconds
+	  					Thread.sleep(attemptInterval);	
 	  				} catch (InterruptedException e) {
 	  				}
 	  			 }
