@@ -5,15 +5,16 @@ import io.socket.IOAcknowledge;
 import io.socket.IOCallback;
 import io.socket.SocketIO;
 import io.socket.SocketIOException;
-import java.net.MalformedURLException;
-import java.net.UnknownHostException;
 import java.util.HashMap;
 import org.json.JSONObject;
+
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -39,12 +40,15 @@ public class CloudPushService extends Service {
 	  public void NotifyUser(String msg)
 		{
 		 String applicationName = getResources().getString(R.string.app_name);
+		 long [] pattern = {0, 500};	
+		 Uri sound_uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
 			NotificationCompat.Builder mBuilder =
 			        new NotificationCompat.Builder(this)
 			        .setSmallIcon(R.drawable.default_android_icon)
 			        .setContentTitle(applicationName)
-			        .setContentText(msg);
-	
+			        .setContentText(msg)
+			        .setSound(sound_uri)
+			        .setVibrate(pattern);
 			PendingIntent resultPendingIntent = PendingIntent.getActivity(
 								getApplicationContext(), 0, new Intent(), 0);
 
