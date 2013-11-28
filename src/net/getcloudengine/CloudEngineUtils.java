@@ -23,18 +23,9 @@ import android.util.Log;
 
 public class CloudEngineUtils {
 	
-	private static String apikey = "";
-	private static String appId = "";
 	private static final int FILE_BUFFER_SIZE = 1024;
 	
-	public static String getApiKey(){
-		return apikey;
-	}
-
-	public static String getAppId(){
-		return appId;
-	}
-
+	
 	public static boolean isNetworkAvailable(Context ctx) {
 	    ConnectivityManager connectivityManager 
 	          = (ConnectivityManager) ctx.getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -42,15 +33,7 @@ public class CloudEngineUtils {
 	    return activeNetworkInfo != null && activeNetworkInfo.isConnected();
 	}
 	
-	public static void setApiKey(String key)
-	{
-		apikey = key;
-	}
 	
-	public static void setAppId(String app_id)
-	{
-		appId = app_id;
-	}
 	public static String convertStreamToString(InputStream is) throws CloudException{
         BufferedReader reader = new BufferedReader(new InputStreamReader(is), 8*1024);
         StringBuilder sb = new StringBuilder();
@@ -81,10 +64,12 @@ public class CloudEngineUtils {
 		HttpURLConnection connection = null;
 		String response = "";
 		
+		String apiKey = CloudEngine.getApiKey();
+		String appId = CloudEngine.getAppId();
 		
-		if(apikey == null || apikey == "")
+		if(apiKey == null || apiKey == "" || appId == null || appId == "")
 		{
-			throw new CloudAuthException("API key not available");
+			throw new CloudAuthException("API/App key not available");
 		}
 		
 		String request_method = method.toString();
@@ -96,7 +81,7 @@ public class CloudEngineUtils {
 			connection = (HttpURLConnection) url.openConnection();
 			
 	        connection.setRequestMethod(request_method);
-	        connection.addRequestProperty("Authorization", "Token " + apikey);
+	        connection.addRequestProperty("Authorization", "Token " + apiKey);
 	        connection.addRequestProperty("AppId", appId);
 
 	        connection.setRequestProperty("Accept","application/json");
@@ -164,7 +149,11 @@ public class CloudEngineUtils {
 		HttpURLConnection connection = null;
 		byte[] buffer = new byte[FILE_BUFFER_SIZE];
 		
-		if(apikey == null || apikey == "")
+		String apiKey = CloudEngine.getApiKey();
+		String appId = CloudEngine.getAppId();
+		
+		
+		if(apiKey == null || apiKey == "" || appId == null || appId == "")
 		{
 			throw new CloudAuthException("API key not available");
 		}
@@ -177,8 +166,7 @@ public class CloudEngineUtils {
 			connection = (HttpURLConnection) url.openConnection();
 			
 	        connection.setRequestMethod(request_method);
-	        Log.d(TAG, "Setting Auth token: " + apikey);
-	        connection.addRequestProperty("Authorization", "Token " + apikey);
+	        connection.addRequestProperty("Authorization", "Token " + apiKey);
 	        connection.addRequestProperty("AppId", appId);
 
 	        connection.setRequestProperty("Accept","application/json");

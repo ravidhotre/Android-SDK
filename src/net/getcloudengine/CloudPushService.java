@@ -64,19 +64,19 @@ public class CloudPushService extends Service {
 	  public SocketIO socket_call(String app_id)
 		{
 				final String TAG = "CloudPushService";
-				String apikey = CloudEngineUtils.getApiKey();
+				String apiKey = CloudEngine.getApiKey();
+				String appId = CloudEngine.getAppId();
+				if(apiKey == null || apiKey == "" || appId == null || appId == "")
+				{
+					return null;
+				}
 				
 				try {
 					
 					String host = CloudEndPoints.socketServer;
-					
 					SocketIO socket = new SocketIO();
-					
 					subscriptions.put(app_id, socket);
-					
-					socket.addHeader("Authorization", "Token " + apikey);
-									
-					String appId = CloudEngineUtils.getAppId();
+					socket.addHeader("Authorization", "Token " + apiKey);
 					socket.addHeader("AppId", appId);
 					socket.connect(host, new IOCallback(){ 
 
@@ -110,7 +110,6 @@ public class CloudPushService extends Service {
 									String msg = exception.getMessage();
 									Log.e(TAG, "Error in connecting. " + msg);
 									exception.printStackTrace();
-									
 								}
 
 								@Override
@@ -221,7 +220,6 @@ public class CloudPushService extends Service {
 			 	}
 			 	
 		   }
-		  
 	      return START_STICKY;
 	  }
 

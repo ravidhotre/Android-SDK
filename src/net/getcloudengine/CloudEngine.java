@@ -14,11 +14,14 @@ import android.util.Log;
 public class CloudEngine {
 	
 	private static final String TAG = "CloudEngine";
+	private static String apiKey = null;
+	private static String appId = null;
 	private static Context app_context = null;
 	public static final String APP_ID = "AppId";
 	public static final String API_KEY = "AppKey";
 	public static final String PREFERENCE_FILE = "net.getcloudengine.PREFERENCE_FILE_KEY";
 	static String applicationName;
+	 
 	
 	/**
 	 * Initialize the Cloudengine library functions and services.
@@ -33,15 +36,24 @@ public class CloudEngine {
      */
 	public static void initialize(Context ctx, String key, String app_id)
 	{
-		CloudEngineUtils.setApiKey(key);
-		CloudEngineUtils.setAppId(app_id);
+		apiKey = key;
+		appId = app_id;
 		app_context = ctx;
 		applicationName = ctx.getResources().getString(R.string.app_name);
 		initPushService(app_id);
-		//initDB();
 		saveCredentials();
 		
+		
 	}
+	
+	public static String getApiKey(){
+		return apiKey;
+	}
+
+	public static String getAppId(){
+		return appId;
+	}
+
 	
 	private static void saveCredentials(){
 		
@@ -54,8 +66,8 @@ public class CloudEngine {
 		if(apiKey == null || appId == null)
 		{
 			SharedPreferences.Editor editor = sharedPref.edit();
-			editor.putString(API_KEY, CloudEngineUtils.getApiKey());
-			editor.putString(APP_ID, CloudEngineUtils.getAppId());
+			editor.putString(API_KEY, apiKey);
+			editor.putString(APP_ID, appId);
 			editor.commit();
 		}
 		
@@ -63,6 +75,11 @@ public class CloudEngine {
 	
 	
 	public static void initPushService(String app_id) {
+		
+		if(!CloudEngineUtils.isNetworkAvailable(app_context))
+    	{
+    		return;
+    	}
 		
 		//Check if push service is running
 		Log.d(TAG, "CloudEngine starting Push service");

@@ -17,15 +17,11 @@
         android:allowBackup="true"
         android:icon="@drawable/default_android_icon">
         <serice android:name=".PushService" />
-         <receiver android:name=".CloudEngineBootupReceiver">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-                <action android:name="android.intent.action.USER_PRESENT" />
-            </intent-filter>
-        </receiver>
-         <receiver android:name=".CloudEngineNetworkReceiver">
+        <receiver android:name=".CloudEngineReceiver">
             <intent-filter>
                 <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.USER_PRESENT" />
             </intent-filter>
         </receiver>
     </application>

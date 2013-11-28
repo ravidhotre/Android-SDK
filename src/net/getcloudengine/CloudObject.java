@@ -1,8 +1,12 @@
 
 package net.getcloudengine;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.Iterator;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -21,13 +25,11 @@ public class CloudObject {
 	private String name;
 	private String _id = null;
 	private static final String TAG = "CloudEngineObject";
+	private static final String queueFilename = "SyncQueue.txt";
+	private static final String SAVEQ = "saveQueue";
+	private static final String DELETEQ = "deleteQueue";
+	private static final int maxFileSize = 512 * 1024 ;	// Max file size of 500 KB
 	private JSONObject jsonObj = new JSONObject();
-	private static ConcurrentLinkedQueue<SaveTask> SaveQueue = 
-						new ConcurrentLinkedQueue<SaveTask>();
-	private static ConcurrentLinkedQueue<FetchTask> FetchQueue = 
-			new ConcurrentLinkedQueue<FetchTask>();
-	private static ConcurrentLinkedQueue<DeleteTask> DeleteQueue = 
-			new ConcurrentLinkedQueue<DeleteTask>();
 	
 	
 	protected CloudObject(){
@@ -64,7 +66,6 @@ public class CloudObject {
 			_id = obj.getString("_id");
 			obj.remove("_id");
 		}
-		
 		this.jsonObj = obj;
 	}
 	
@@ -490,17 +491,22 @@ public class CloudObject {
 		
 		String address = CloudEndPoints.retrieveCloudObject(name, _id);
 		String response = null;
-			response = CloudEngineUtils.httpRequest(address, 
-												HttpMethod.GET, jsonObj);
-		
+		response = CloudEngineUtils.httpRequest(address, HttpMethod.GET);
 		try{
-			this.jsonObj = new JSONObject(response);
+			JSONObject JSONResponse = new JSONObject(response);
+			JSONObject obj = JSONResponse.getJSONObject("result");
+			String id = obj.getString("_id");
+			if(this._id != id){
+				// We should never have come here
+				return this;	// unable to update the object
+			}
+			obj.remove("_id");
+			this.jsonObj = obj;
 		}
 		catch(JSONException e)
 		{
 			throw new CloudException("Invalid response received");
-		}
-		
+		}		
     	return this;
 		
 	}
@@ -539,6 +545,175 @@ public class CloudObject {
 	     }
 	}
 	
+	private JSONObject Serialize(){
+		
+		JSONObject newobj = new JSONObject();
+		Iterator<String> iter = jsonObj.keys();
+		while(iter.hasNext()){
+			String key = iter.next();
+			try {
+				newobj.put(key, jsonObj.get(key));
+			} catch (JSONException e) {
+				e.printStackTrace();
+			}
+		}
+		try {
+			newobj.put("CloudObjectName", this.name);
+			if(_id != null){
+				newobj.put("_id", this._id);
+			}
+			
+		} catch (JSONException e) {
+			
+			e.printStackTrace();
+			return null;	// We cannot deserialize the object without this info
+		}
+		
+		return newobj;
+	}
+	
+	private static CloudObject Deserialize(JSONObject obj)
+	{
+		
+		String name;
+		CloudObject cloudObj = null;
+		try {
+			name = obj.getString("CloudObjectName");
+			obj.remove("CloudObjectName");
+			cloudObj = new CloudObject(name, obj);
+		} catch (JSONException e) {
+			return null;
+		}
+		return cloudObj;
+	}
+	
+	
+	private static String readPendingFile(Context ctx, String filename){
+		
+		FileInputStream inputStream = null;
+		String filedump = null;
+		File file = new File(ctx.getFilesDir(), queueFilename);
+		// Read the file as one big string
+		try {
+			
+		  inputStream = ctx.openFileInput(queueFilename);
+		  byte[] buffer = new byte[(int) file.length()];
+		  inputStream.read(buffer);
+		  filedump = new String(buffer, "UTF-8");
+		  
+		} catch(FileNotFoundException e){
+			// if the file does not exist, it will 
+			// be created below. continue.			
+			return null;
+		}catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+		finally{
+			if(inputStream != null){
+				try {
+					inputStream.close();
+				} catch (IOException e) {
+				}
+			}
+		}
+		return filedump;
+	}
+	
+	
+	
+	// Since the internal representation of CloudObject is JSON, we leverage
+	// that to persist the object instead of serializing entire CloudObject
+	// while writing to the file.
+	// todo: add better error handling than printStackTrace
+		private void AddPending(Context ctx, String queue){
+			
+			int indentSpaces = 4;
+			FileOutputStream outputStream = null;
+			String filedump = null;
+			JSONObject allQueues = null;
+			String qstring = null;
+			
+			
+			//Check file size before writing
+			File file = new File(ctx.getFilesDir(), queueFilename);
+			if(file.exists() && file.length() >= maxFileSize)
+			{
+				return;
+			}
+			
+			filedump = readPendingFile(ctx, queueFilename);
+			if(filedump != null){
+				
+				// Create JSON structures from file data
+				try {
+					allQueues = new JSONObject(filedump);
+				} catch (JSONException e) {
+					e.printStackTrace();
+					return;
+				}
+			}else{
+				allQueues = new JSONObject();
+			}
+			
+			JSONArray pendingQueue = null;
+			try {
+				
+				if(allQueues.has(queue)){
+					 pendingQueue = allQueues.getJSONArray(queue);
+				}else{
+					pendingQueue = new JSONArray();
+				}
+				
+				if(queue == SAVEQ){
+					JSONObject currObj = Serialize();
+					if(currObj == null){
+						// Unable to serialize object.
+						return;
+					}
+					pendingQueue.put(currObj);
+				}
+				else{
+					// For delete requests, we only need to save the id
+					// and the object name
+					JSONObject currObj = new JSONObject();
+					currObj.put("CloudObjectName", this.name);
+					currObj.put("_id", this._id);
+					pendingQueue.put(currObj);
+				}
+				allQueues.put(queue, pendingQueue);
+				qstring = allQueues.toString(indentSpaces);
+				
+			} catch (Exception e) {
+				e.printStackTrace();
+				return;
+			}
+			
+			// Write the updated queues to the file
+			if(file.exists())
+			{	// remove existing file
+				file.delete();
+			}
+			
+			try {
+				outputStream = ctx.openFileOutput(queueFilename, Context.MODE_PRIVATE);
+				outputStream.write(qstring.getBytes());
+				
+			} catch (Exception e) {
+				e.printStackTrace();
+				
+			}
+			finally{
+				if(outputStream!=null){
+					try {
+						outputStream.close();
+					} catch (IOException e) {
+					}
+				}
+			}
+			
+		}
+	
 	/**
 	 * Saves the object on the server in the current thread.
 	 * The method will fail and throw an exception if no network is available.
@@ -567,16 +742,18 @@ public class CloudObject {
 	{
 		Context ctx = CloudEngine.getContext();
 		SaveTask savetask = new SaveTask();
-		
 		if(CloudEngineUtils.isNetworkAvailable(ctx))
 		{
 			savetask.execute();
 		}
 		else{
 			Log.e(TAG, "No network connection. Putting object in save queue");
-			SaveQueue.add(savetask);
+			AddPending(ctx, SAVEQ);
 		}
 	}
+	
+	
+	
 	/**
 	 * Saves the object on the server in a background thread. If no network
 	 * is currently available. The object will be eventually saved when the
@@ -600,7 +777,7 @@ public class CloudObject {
 		}
 		else{
 			Log.e(TAG, "No network connection. Putting object in save queue");
-			SaveQueue.add(savetask);
+			AddPending(ctx, SAVEQ);
 		}		
 	}
 	
@@ -657,7 +834,7 @@ public class CloudObject {
 		}
 		else{
 			Log.e(TAG, "No network connection. Putting object in delte queue");
-			DeleteQueue.add(deletetask);
+			AddPending(ctx, DELETEQ);
 		}
 	}
 	
@@ -690,7 +867,7 @@ public class CloudObject {
 		}
 		else{
 			Log.e(TAG, "No network connection. Putting object in delete queue");
-			DeleteQueue.add(deletetask);
+			AddPending(ctx, DELETEQ);
 		}
 	}
 	
@@ -747,7 +924,6 @@ public class CloudObject {
 		}
 		else{
 			Log.e(TAG, "Unable to fetch CloudEngineObject. No network connection");
-			FetchQueue.add(fetchtask);
 		}
 	}
 	
@@ -778,47 +954,65 @@ public class CloudObject {
 		}
 		else{
 			Log.e(TAG, "Unable to fetch CloudEngineObject. No network connection");
-			FetchQueue.add(fetchtask);
 		}
 	}
 	
 	
-	private static void savePendingObjects()
+	
+	
+	public static void syncServer(Context ctx)
 	{
-		Iterator<SaveTask> iterator = SaveQueue.iterator();
-		while(iterator.hasNext())
-		{
-			SaveTask obj = iterator.next();
-			obj.execute();
+		
+		String filedump = null;
+		File file = new File(ctx.getFilesDir(), queueFilename);
+		
+		// Read the file as one big string
+		filedump = readPendingFile(ctx, queueFilename);
+		
+		
+		JSONObject allQueues = null;
+		JSONArray queue = null;
+		CloudObject cloudObj = null;
+		if(filedump != null){
+			
+			try {
+				allQueues = new JSONObject(filedump);
+				JSONObject qobj = null;
+				
+				if(allQueues.has(SAVEQ))
+				{
+					// Save pending objects
+					queue = allQueues.getJSONArray(SAVEQ);
+					for (int i = 0; i < queue.length(); i++) {
+					  qobj = queue.getJSONObject(i);
+					  cloudObj = Deserialize(qobj);
+					  if(cloudObj != null){
+						  cloudObj.saveInBackground();
+					  }
+					}
+				}
+				
+				if(allQueues.has(DELETEQ)){
+					// delete pending object
+					queue = allQueues.getJSONArray(DELETEQ);
+					for (int i = 0; i < queue.length(); i++) {
+						
+						qobj = queue.getJSONObject(i);
+						cloudObj = Deserialize(qobj);
+						if(cloudObj != null){
+							cloudObj.deleteInBackground();
+						}
+					}
+				}
+				
+			} catch (JSONException e) {
+				e.printStackTrace();
+				return;
+			}
 		}
-	}
-	
-	private static void fetchPendingObjects()
-	{
-		Iterator<FetchTask> iterator = FetchQueue.iterator();
-		while(iterator.hasNext())
-		{
-			FetchTask obj = iterator.next();
-			obj.execute();
-		}
-	}
-	
-	private static void deletePendingObjects()
-	{
-		Iterator<DeleteTask> iterator = DeleteQueue.iterator();
-		while(iterator.hasNext())
-		{
-			DeleteTask obj = iterator.next();
-			obj.execute();
-		}
-	}
-	
-	
-	public static void syncServer()
-	{
-		savePendingObjects();
-		deletePendingObjects();
-		fetchPendingObjects();
+		file.delete();
+		
+		
 	}
 	
 }
