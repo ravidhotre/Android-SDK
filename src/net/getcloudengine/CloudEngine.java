@@ -58,12 +58,12 @@ public class CloudEngine {
 	private static void saveCredentials(){
 		
 		SharedPreferences sharedPref = app_context.getSharedPreferences(
-				PREFERENCE_FILE , app_context.MODE_PRIVATE);
+				PREFERENCE_FILE , Context.MODE_PRIVATE);
 		
-		String apiKey = sharedPref.getString(API_KEY, null);
-		String appId = sharedPref.getString(APP_ID, null);
+		String key = sharedPref.getString(API_KEY, null);
+		String id = sharedPref.getString(APP_ID, null);
 		
-		if(apiKey == null || appId == null)
+		if(key == null || id == null)
 		{
 			SharedPreferences.Editor editor = sharedPref.edit();
 			editor.putString(API_KEY, apiKey);
