@@ -16,12 +16,11 @@
     <application
         android:allowBackup="true"
         android:icon="@drawable/default_android_icon">
-        <serice android:name=".PushService" />
-        <receiver android:name=".CloudEngineReceiver">
+        <serice android:name="net.getcloudengine.PushService" />
+        <receiver android:name="net.getcloudengine.CloudEngineReceiver">
             <intent-filter>
                 <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
-                <action android:name="android.intent.action.USER_PRESENT" />
             </intent-filter>
         </receiver>
     </application>
