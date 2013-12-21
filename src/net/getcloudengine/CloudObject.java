@@ -7,6 +7,12 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Iterator;
+
+import org.apache.http.client.methods.HttpDelete;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.methods.HttpRequestBase;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -31,6 +37,7 @@ public class CloudObject {
 	private static final int maxFileSize = 512 * 1024 ;	// Max file size of 500 KB
 	private JSONObject jsonObj = new JSONObject();
 	
+	CloudEngineUtils utils = CloudEngineUtils.getInstance();
 	
 	protected CloudObject(){
 		
@@ -438,24 +445,25 @@ public class CloudObject {
 								CloudException{
 		
 		String response =null, address = null;
-		HttpMethod method;
+		HttpRequestBase method;
 		
 		if(_id!=null)
 		{
 			// Updating an existing object
 			address = CloudEndPoints.updateCloudObject(name, _id);
 			Log.i(TAG, "Updating CloudObject at endpoint " + address);
-			method = HttpMethod.PUT;
+			method = new HttpPut();
 		}
 		else{
 			
 			// Saving a new object
 			address = CloudEndPoints.saveCloudObject(name);
 			Log.i(TAG, "Saving CloudObject at endpoint " + address);
-			method = HttpMethod.POST;
+			method = new HttpPost();
 		}
 		try{
-			response = CloudEngineUtils.httpRequest(address, method, jsonObj);
+			
+			response = utils.httpRequest(address, method, jsonObj);
 			JSONObject obj = new JSONObject(response);
 			_id = obj.getString("_id");
 		}
@@ -475,8 +483,9 @@ public class CloudObject {
 								CloudException{
 		
 		String address = CloudEndPoints.deleteCloudObject(name, _id);
+		
 		try {
-			CloudEngineUtils.httpRequest(address, HttpMethod.DELETE);
+			utils.httpRequest(address, new HttpDelete());
 		} 
 		catch (CloudAuthException e){
 			 throw e;
@@ -491,7 +500,7 @@ public class CloudObject {
 		
 		String address = CloudEndPoints.retrieveCloudObject(name, _id);
 		String response = null;
-		response = CloudEngineUtils.httpRequest(address, HttpMethod.GET);
+		response = utils.httpRequest(address, new HttpGet());
 		try{
 			JSONObject JSONResponse = new JSONObject(response);
 			JSONObject obj = JSONResponse.getJSONObject("result");
@@ -723,7 +732,7 @@ public class CloudObject {
 	public void save() throws CloudException
 	{		
 		Context ctx = CloudEngine.getContext();
-		if(CloudEngineUtils.isNetworkAvailable(ctx))
+		if(utils.isNetworkAvailable(ctx))
 		{
 			save_object();
 		}
@@ -742,7 +751,7 @@ public class CloudObject {
 	{
 		Context ctx = CloudEngine.getContext();
 		SaveTask savetask = new SaveTask();
-		if(CloudEngineUtils.isNetworkAvailable(ctx))
+		if(utils.isNetworkAvailable(ctx))
 		{
 			savetask.execute();
 		}
@@ -771,7 +780,7 @@ public class CloudObject {
 		SaveTask savetask = new SaveTask();
 		savetask.setCallback(callback);
 		
-		if(CloudEngineUtils.isNetworkAvailable(ctx))
+		if(utils.isNetworkAvailable(ctx))
 		{
 			savetask.execute();
 		}
@@ -797,7 +806,7 @@ public class CloudObject {
 			throw new CloudException("Invalid object. Save the object before deleting it.");
 		}
 		
-		if(CloudEngineUtils.isNetworkAvailable(ctx))
+		if(utils.isNetworkAvailable(ctx))
 		{
 			delete_object();
 		}
@@ -828,7 +837,7 @@ public class CloudObject {
 		
 		Context ctx = CloudEngine.getContext();
 		DeleteTask deletetask = new DeleteTask();
-		if(CloudEngineUtils.isNetworkAvailable(ctx))
+		if(utils.isNetworkAvailable(ctx))
 		{
 			deletetask.execute();
 		}
@@ -861,7 +870,7 @@ public class CloudObject {
 		Context ctx = CloudEngine.getContext();
 		DeleteTask deletetask = new DeleteTask();
 		deletetask.setCallback(callback);
-		if(CloudEngineUtils.isNetworkAvailable(ctx))
+		if(utils.isNetworkAvailable(ctx))
 		{
 			deletetask.execute();
 		}
@@ -888,7 +897,7 @@ public class CloudObject {
 		}
 		
 		Context ctx = CloudEngine.getContext();
-		if(CloudEngineUtils.isNetworkAvailable(ctx))
+		if(utils.isNetworkAvailable(ctx))
 		{
 			return retrieve_object();
 		}
@@ -918,7 +927,7 @@ public class CloudObject {
 		}
 		Context ctx = CloudEngine.getContext();
 		FetchTask fetchtask = new FetchTask();
-		if(CloudEngineUtils.isNetworkAvailable(ctx))
+		if(utils.isNetworkAvailable(ctx))
 		{
 			fetchtask.execute();
 		}
@@ -948,7 +957,7 @@ public class CloudObject {
 		Context ctx = CloudEngine.getContext();
 		FetchTask fetchtask = new FetchTask();
 		fetchtask.setCallback(callback);
-		if(CloudEngineUtils.isNetworkAvailable(ctx))
+		if(utils.isNetworkAvailable(ctx))
 		{
 			fetchtask.execute();
 		}

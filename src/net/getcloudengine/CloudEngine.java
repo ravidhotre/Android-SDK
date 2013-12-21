@@ -1,10 +1,10 @@
 package net.getcloudengine;
-import android.app.ActivityManager;
-import android.app.ActivityManager.RunningServiceInfo;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.util.Log;
+import android.webkit.CookieManager;
+import android.webkit.CookieSyncManager;
 
 
 /**
@@ -42,8 +42,10 @@ public class CloudEngine {
 		applicationName = ctx.getResources().getString(R.string.app_name);
 		initPushService(app_id);
 		saveCredentials();
+		CookieSyncManager syncManager = CookieSyncManager.createInstance(ctx);
+		syncManager.sync();
 		
-		
+	
 	}
 	
 	public static String getApiKey(){
@@ -76,7 +78,9 @@ public class CloudEngine {
 	
 	public static void initPushService(String app_id) {
 		
-		if(!CloudEngineUtils.isNetworkAvailable(app_context))
+		CloudEngineUtils utils = CloudEngineUtils.getInstance();
+		
+		if(!utils.isNetworkAvailable(app_context))
     	{
     		return;
     	}
@@ -90,17 +94,7 @@ public class CloudEngine {
 		return;
 		
 	}
-	
-
-	private static boolean isPushServiceRunning() {
-	    ActivityManager manager = (ActivityManager) app_context.getSystemService(Context.ACTIVITY_SERVICE);
-	    for (RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
-	        if (CloudPushService.class.getName().equals(service.service.getClassName())) {
-	            return true;
-	        }
-	    }
-	    return false;
-	}
+		
 	
 	
 	public static Context getContext() {

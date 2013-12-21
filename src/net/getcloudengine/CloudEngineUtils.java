@@ -3,18 +3,26 @@ package net.getcloudengine;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
+import android.webkit.CookieManager;
+import java.net.HttpCookie;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.UnknownHostException;
 
+import org.apache.http.HttpResponse;
+import org.apache.http.StatusLine;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.DefaultHttpClient;
 import org.json.JSONObject;
-
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -24,18 +32,46 @@ import android.util.Log;
 public class CloudEngineUtils {
 	
 	private static final int FILE_BUFFER_SIZE = 1024;
+	HttpClient httpclient = null;
+	CookieManager cookieManager = null;
+	private static CloudEngineUtils instance = null;
+	String TAG = "CloudEngineUtils";
+	
+	protected CloudEngineUtils(){
+		
+		 httpclient = new DefaultHttpClient();
+		 	cookieManager =  CookieManager.getInstance();
+		 
+	}
+	
+	public void addCookie(String address, HttpCookie cookie){
+		
+		cookieManager.setCookie(address, cookie.toString());
+		
+	}
 	
 	
-	public static boolean isNetworkAvailable(Context ctx) {
-	    ConnectivityManager connectivityManager 
+	public static CloudEngineUtils getInstance(){
+		 
+		if(instance == null){
+			instance = new CloudEngineUtils();
+		}
+		return instance;
+	}
+	
+	
+	public boolean isNetworkAvailable(Context ctx) {
+	    
+		ConnectivityManager connectivityManager 
 	          = (ConnectivityManager) ctx.getSystemService(Context.CONNECTIVITY_SERVICE);
 	    NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
 	    return activeNetworkInfo != null && activeNetworkInfo.isConnected();
 	}
 	
 	
-	public static String convertStreamToString(InputStream is) throws CloudException{
-        BufferedReader reader = new BufferedReader(new InputStreamReader(is), 8*1024);
+	public String convertStreamToString(InputStream is) throws CloudException{
+        
+		BufferedReader reader = new BufferedReader(new InputStreamReader(is), 8*1024);
         StringBuilder sb = new StringBuilder();
  
         String line = null;
@@ -58,90 +94,67 @@ public class CloudEngineUtils {
         return sb.toString();
     }
 	
-	private static String makeRequest(String address, HttpMethod method, JSONObject payload) throws UnknownHostException
+	
+	private String makeRequest(String address, 
+			HttpRequestBase request, JSONObject payload) 
+					throws UnknownHostException,
+					CloudAuthException
+					
 	{
-		String TAG = "CloudEngineHttpRequest";
-		HttpURLConnection connection = null;
-		String response = "";
-		
+		String responseString = null;
+		StatusLine statusLine = null;
 		String apiKey = CloudEngine.getApiKey();
 		String appId = CloudEngine.getAppId();
+		 HttpResponse response = null;
 		
 		if(apiKey == null || apiKey == "" || appId == null || appId == "")
 		{
 			throw new CloudAuthException("API/App key not available");
 		}
 		
-		String request_method = method.toString();
+		request.addHeader("Authorization", "Token " + apiKey);
+		request.addHeader("AppId", appId);
+		request.addHeader("Accept", "application/json" );
+		         
+		try{	
+				URL url = new URL(address);
+				request.setURI(url.toURI());
+				
+				if(payload != null){
+					
+					request.addHeader("Content-Type","application/json" );
+					HttpPost post = (HttpPost) request;
+					StringEntity entity = new StringEntity(payload.toString());
+					post.setEntity(entity);
+					
+				}
+				
+			   response = httpclient.execute(request);
+			   statusLine = response.getStatusLine();
+			   ByteArrayOutputStream out = new ByteArrayOutputStream();
+		       response.getEntity().writeTo(out);
+		       out.close();
+		       responseString = out.toString();
+			   
+		}
 		
-		try {
+		catch(Exception e){
 			
-			
-			URL url = new URL(address);
-			connection = (HttpURLConnection) url.openConnection();
-			
-	        connection.setRequestMethod(request_method);
-	        connection.addRequestProperty("Authorization", "Token " + apiKey);
-	        connection.addRequestProperty("AppId", appId);
-
-	        connection.setRequestProperty("Accept","application/json");
-	        connection.setUseCaches(false); 
-	        connection.setDoInput(true);
-	        
-	        if(payload != null)
-	        {
-	        	connection.setRequestProperty("Content-Type","application/json");
-	        	connection.setDoOutput(true);
-	        	OutputStreamWriter request = new OutputStreamWriter(connection.getOutputStream());
-	            request.write(payload.toString());
-	            request.flush();
-	            request.close();
-	        }
-	        
-	        connection.connect(); 
-            InputStream in = new BufferedInputStream(connection.getInputStream());
-            response = convertStreamToString(in);
-            connection.disconnect();
-            int response_code = connection.getResponseCode();
-            
-            if ((response_code != HttpURLConnection.HTTP_OK)&&
-            		(response_code != HttpURLConnection.HTTP_CREATED)) {
-                	
-        		Log.e(TAG, "Error connecting to server");
-        		Log.e(TAG, "Response code: " + response_code);
-        		Log.e(TAG, "Response: " + response);
-                if(response_code == HttpURLConnection.HTTP_UNAUTHORIZED)
-                {
-                	throw new CloudAuthException(response);
-                }
-                else{
-                	throw  new CloudException(response);
-                }
-            }
-            
+			Log.e(TAG, "Unable to connect to server. " + e.getMessage());
+			throw new CloudException("Unable to connect to server");
 		} 
-		catch (UnknownHostException e){
-			 throw e;		// Let the caller handle this
-		}
-		catch (Exception e){
-			// For unreachable host, this might be java.net.UnknownHostException
-			 Log.d(TAG, "Error while connecting to server."+ e.getMessage());
-			 e.printStackTrace();
-			 throw new CloudException(e);
-		}
-		finally{
-			if(connection != null)
-			{
-				connection.disconnect();
-			}
-		}
-		
-		
-		return response;
+		 
+		 int status = statusLine.getStatusCode();
+		 Log.d(TAG, "HTTP response status code: " + status);
+		 Log.d(TAG, "HTTP reason: " + statusLine.getReasonPhrase());
+		 Log.d(TAG, "HTTP response: " + responseString);
+		 
+		 return responseString;
+		 
 	}
 	
-	private static String uploadFile(String address, 
-							HttpMethod method,
+	private String uploadFile(String address, 
+							HttpRequestBase method,
 							FileInputStream stream) 
 							throws UnknownHostException 
 	{
@@ -227,7 +240,8 @@ public class CloudEngineUtils {
 	}
 	
 	
-	public static String httpRequest(String address, HttpMethod method, FileInputStream stream)
+	public String httpRequest(String address, 
+			HttpRequestBase method, FileInputStream stream)
 			throws CloudException, CloudAuthException
 	{
 		String result = null;
@@ -256,14 +270,14 @@ public class CloudEngineUtils {
 	}
 	
 	
-	public static String httpRequest(String address, HttpMethod method, JSONObject payload)
+	public String httpRequest(String address, HttpRequestBase request, JSONObject payload)
 		throws CloudException, CloudAuthException
 	{
 		String result = null;
 		int num_attempts = 0;
 		while(true){
 			try{
-				result = makeRequest(address, method, payload);
+				result = makeRequest(address, request, payload);
 				break;
 			}
 			catch(UnknownHostException e){
@@ -284,14 +298,14 @@ public class CloudEngineUtils {
 		return result;
 	}
 	
-	public static String httpRequest(String address, HttpMethod method)
+	public String httpRequest(String address, HttpRequestBase request)
 			throws CloudException, CloudAuthException
 	{
 		String result = null;
 		int num_attempts = 0;
 		while(true){
 			try{
-				result = makeRequest(address, method, null);
+				result = makeRequest(address, request, null);
 				break;
 			}
 			catch(UnknownHostException e){

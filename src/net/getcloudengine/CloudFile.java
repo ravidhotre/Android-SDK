@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 
+import org.apache.http.client.methods.HttpPost;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -21,6 +22,8 @@ public class CloudFile {
 	private long size;
 	private String file_url = null;
 	private final String TAG ="CloudFile";
+	
+	CloudEngineUtils utils = CloudEngineUtils.getInstance();
 	
 	/**
 	 * Constructs a new CloudFile object
@@ -68,10 +71,11 @@ public class CloudFile {
 	
 	private void saveFile() throws 
 			CloudAuthException, CloudException{
+		
 		String response =null; JSONObject obj = null;
 		String url = null;
 		String address = CloudEndPoints.saveCloudFile(name);
-		HttpMethod method = HttpMethod.POST;
+		HttpPost post = new HttpPost();
 		
 		Log.i(TAG, "Trying to save file " + name);
 		FileInputStream stream;
@@ -82,9 +86,8 @@ public class CloudFile {
 			throw new CloudException("File is missing at the location");
 		}
 		
-		response = CloudEngineUtils.httpRequest(address, 
-												method, 
-												stream);
+		
+		response = utils.httpRequest(address, post, stream);
 		Log.i(TAG, "File save complete. Response: " + response);
 		
 
@@ -140,8 +143,9 @@ public class CloudFile {
      * 
      */
 	public void save() throws CloudException{
+		
 		Context ctx = CloudEngine.getContext();
-		if(CloudEngineUtils.isNetworkAvailable(ctx)){
+		if(utils.isNetworkAvailable(ctx)){
 			
 			saveFile();
 		}
@@ -159,10 +163,11 @@ public class CloudFile {
      * 
      */
 	public void saveInBackground(){
+		
 		Context ctx = CloudEngine.getContext();
 		SaveTask savetask = new SaveTask();
 		
-		if(CloudEngineUtils.isNetworkAvailable(ctx))
+		if(utils.isNetworkAvailable(ctx))
 		{
 			savetask.execute();
 		}
@@ -188,7 +193,7 @@ public class CloudFile {
 		SaveTask savetask = new SaveTask();
 		savetask.setCallback(callback);
 		
-		if(CloudEngineUtils.isNetworkAvailable(ctx))
+		if(utils.isNetworkAvailable(ctx))
 		{
 			savetask.execute();
 		}

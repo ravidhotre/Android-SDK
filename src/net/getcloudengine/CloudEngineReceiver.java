@@ -11,8 +11,10 @@ public class CloudEngineReceiver extends BroadcastReceiver {
 
 	@Override
 	public void onReceive(Context context, Intent intent) {
-		 
-		if(!CloudEngineUtils.isNetworkAvailable(context))
+		
+		CloudEngineUtils utils = CloudEngineUtils.getInstance();
+		
+		if(!utils.isNetworkAvailable(context))
     	{
     		return;
     	}

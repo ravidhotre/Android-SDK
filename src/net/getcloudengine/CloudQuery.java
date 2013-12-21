@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import org.apache.http.client.methods.HttpGet;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -26,6 +27,8 @@ public class CloudQuery {
 	private static final String TAG = "CloudQuery";
 	private String collection = null;
 	private JSONObject queryObj = new JSONObject();
+	
+	CloudEngineUtils utils = CloudEngineUtils.getInstance();
 	
 	/**
 	 * Constructs a new CloudQuery 
@@ -57,7 +60,7 @@ public class CloudQuery {
 		address = CloudEndPoints.retrieveCloudObject(collection, id);
 		try{
 			
-			response = CloudEngineUtils.httpRequest(address, HttpMethod.GET);
+			response = utils.httpRequest(address, new HttpGet());
 			obj = new CloudObject(collection, new JSONObject(response));
 		}
 		
@@ -120,7 +123,7 @@ public class CloudQuery {
 			
 			Log.i(TAG, "connecting to endpoint : " + address);
 			address += "?query=" + URLEncoder.encode(queryObj.toString());
-			response = CloudEngineUtils.httpRequest(address, HttpMethod.GET);
+			response = utils.httpRequest(address, new HttpGet());
 			Log.i(TAG, "query response received: "+ response);
 			JSONObject query_response = new JSONObject(response);
 			JSONArray arr = query_response.getJSONArray("result");
@@ -142,7 +145,6 @@ public class CloudQuery {
 	
 	private class FindTask extends AsyncTask<Void, Void, FindResult> {
 		
-		private static final String TAG = "QueryTask";
 		FindCallback callback = null;
 		
 		public void setCallback(FindCallback cbk){
