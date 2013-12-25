@@ -13,10 +13,17 @@ import android.support.v4.app.NotificationCompat;
  */
 public class PushCallback implements java.io.Serializable {
 	
+	//
+	private Intent intent = new Intent();
+	//private Class<? extends Activity> activity = null;
+	
 	public void handleMessage(Context context, String message){
 		DisplayNotification(context, message);
 	}
 	
+	public void setDefaultCallback(Intent intent){
+		this.intent  = intent;
+	}
 	
 	private void DisplayNotification(Context context, String msg)
 	{
@@ -30,9 +37,12 @@ public class PushCallback implements java.io.Serializable {
 			        .setContentTitle(applicationName)
 			        .setContentText(msg)
 			        .setSound(sound_uri)
-			        .setVibrate(pattern);
+			        .setVibrate(pattern)
+			        .setAutoCancel(true);
+			
+			
 			PendingIntent resultPendingIntent = PendingIntent.getActivity(
-								context, 0, new Intent(), 0);
+								context, 0, this.intent, 0);
 	
 			mBuilder.setContentIntent(resultPendingIntent);
 			NotificationManager mNotificationManager =

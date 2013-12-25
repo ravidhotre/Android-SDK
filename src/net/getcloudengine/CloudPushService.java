@@ -13,6 +13,8 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.HashMap;
 import org.json.JSONObject;
+
+import android.app.Activity;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -34,6 +36,7 @@ public class CloudPushService extends Service {
 	  private int maxAttempts = 3;
 	  private static boolean customCallback = false;
 	  private final String pushCallbackFilename = "PushCallback.ser"; 
+	  private static Class<? extends Activity> defaultCallback = null;
 	
 	  private int attemptInterval = 60000;		// Around the same as heartbeat timeout of the server
 	  private static PushCallback callback = new PushCallback();	//Default push callback handler
@@ -47,11 +50,16 @@ public class CloudPushService extends Service {
 		  
 	  };
 	  
+	  public static void setDefaultCallback(Class<? extends Activity> activity){
+		  Intent intent = new Intent(CloudEngine.getContext(), activity);
+		  intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+		  callback.setDefaultCallback(intent);
+	  }
+	  
 	  
 	  public static void installCallback(PushCallback cbk){
 		  if(cbk != null)
-			  callback = cbk;			
-		  
+			  callback = cbk;
 		  customCallback = true;
 	  }
 	  
@@ -78,8 +86,16 @@ public class CloudPushService extends Service {
 									Log.d(TAG, event + " event received. ");
 									if ("push".equals(event) && args.length > 0)
 									{
-										String msg = (String) args[0];
-										callback.handleMessage(context, msg);
+										if(defaultCallback != null){
+											Log.d(TAG, "Starting default activity");
+											Intent intent = new Intent(context, defaultCallback);
+											context.startActivity(intent);
+										}
+										else{
+											String msg = (String) args[0];
+											callback.handleMessage(context, msg);
+										}
+										
 									}						
 								}
 
@@ -196,7 +212,6 @@ public class CloudPushService extends Service {
 		  String app_id = null;
 		  Bundle data = new Bundle();
 		  boolean connect = true;
-		  Log.d(TAG, "Push service start command");
 		  
 		  if (intent.hasExtra("AppId")) {
 			  
