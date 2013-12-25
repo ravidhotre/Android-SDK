@@ -635,20 +635,27 @@ public class CloudObject {
 	// that to persist the object instead of serializing entire CloudObject
 	// while writing to the file.
 	// todo: add better error handling than printStackTrace
-		private void AddPending(Context ctx, String queue){
-			
+	private class AddPending extends AsyncTask<String, Void, Void> {
+		
+		
+		@Override
+		protected Void doInBackground(String... args) {
+				
 			int indentSpaces = 4;
 			FileOutputStream outputStream = null;
 			String filedump = null;
 			JSONObject allQueues = null;
 			String qstring = null;
+			String queue = args[0];
 			
-			
-			//Check file size before writing
+			Context ctx = CloudEngine.getContext();
+			// Check file size before writing
+			// If file size has exceeded maxFileSize, we don't
+			// save any more data.
 			File file = new File(ctx.getFilesDir(), queueFilename);
 			if(file.exists() && file.length() >= maxFileSize)
 			{
-				return;
+				return null;
 			}
 			
 			filedump = readPendingFile(ctx, queueFilename);
@@ -659,7 +666,7 @@ public class CloudObject {
 					allQueues = new JSONObject(filedump);
 				} catch (JSONException e) {
 					e.printStackTrace();
-					return;
+					return null;
 				}
 			}else{
 				allQueues = new JSONObject();
@@ -678,7 +685,7 @@ public class CloudObject {
 					JSONObject currObj = Serialize();
 					if(currObj == null){
 						// Unable to serialize object.
-						return;
+						return null;
 					}
 					pendingQueue.put(currObj);
 				}
@@ -686,8 +693,8 @@ public class CloudObject {
 					// For delete requests, we only need to save the id
 					// and the object name
 					JSONObject currObj = new JSONObject();
-					currObj.put("CloudObjectName", this.name);
-					currObj.put("_id", this._id);
+					currObj.put("CloudObjectName", name);
+					currObj.put("_id", _id);
 					pendingQueue.put(currObj);
 				}
 				allQueues.put(queue, pendingQueue);
@@ -695,8 +702,8 @@ public class CloudObject {
 				
 			} catch (Exception e) {
 				e.printStackTrace();
-				return;
-			}
+				return null;
+			} 
 			
 			// Write the updated queues to the file
 			if(file.exists())
@@ -720,9 +727,11 @@ public class CloudObject {
 					}
 				}
 			}
-			
+			return null;
 		}
+	}
 	
+
 	/**
 	 * Saves the object on the server in the current thread.
 	 * The method will fail and throw an exception if no network is available.
@@ -757,7 +766,8 @@ public class CloudObject {
 		}
 		else{
 			Log.e(TAG, "No network connection. Putting object in save queue");
-			AddPending(ctx, SAVEQ);
+			AddPending task =  new AddPending();
+			task.execute(SAVEQ);
 		}
 	}
 	
@@ -786,7 +796,8 @@ public class CloudObject {
 		}
 		else{
 			Log.e(TAG, "No network connection. Putting object in save queue");
-			AddPending(ctx, SAVEQ);
+			AddPending task =  new AddPending();
+			task.execute(SAVEQ);
 		}		
 	}
 	
@@ -843,7 +854,8 @@ public class CloudObject {
 		}
 		else{
 			Log.e(TAG, "No network connection. Putting object in delte queue");
-			AddPending(ctx, DELETEQ);
+			AddPending task =  new AddPending();
+			task.execute(DELETEQ);
 		}
 	}
 	
@@ -876,7 +888,8 @@ public class CloudObject {
 		}
 		else{
 			Log.e(TAG, "No network connection. Putting object in delete queue");
-			AddPending(ctx, DELETEQ);
+			AddPending task =  new AddPending();
+			task.execute(DELETEQ);
 		}
 	}
 	

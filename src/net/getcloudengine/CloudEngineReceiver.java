@@ -29,8 +29,9 @@ public class CloudEngineReceiver extends BroadcastReceiver {
 			if(apiKey != null && appId !=null)
 			{
 				CloudEngine.initialize(context, apiKey, appId);
+				CloudObject.syncServer(context);
 			}
-			CloudObject.syncServer(context);
+			
 		}
     	
 
