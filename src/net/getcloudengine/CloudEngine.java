@@ -36,6 +36,10 @@ public class CloudEngine {
      */
 	public static void initialize(Context ctx, String key, String app_id)
 	{
+		if(ctx == null || key == null || app_id == null
+				|| key == "" || app_id == ""){
+			throw new CloudException("Invalid arguments provided");
+		}
 		apiKey = key;
 		appId = app_id;
 		app_context = ctx;
@@ -76,7 +80,7 @@ public class CloudEngine {
 	}
 	
 	
-	public static void initPushService(String app_id) {
+	private static void initPushService(String app_id) {
 		
 		CloudEngineUtils utils = CloudEngineUtils.getInstance();
 		

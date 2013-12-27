@@ -35,8 +35,10 @@ public class CloudPushService extends Service {
 	  private static final String TAG = "CloudPushService";
 	  private int maxAttempts = 3;
 	  private static boolean customCallback = false;
-	  private final String pushCallbackFilename = "PushCallback.ser"; 
+	  private final String pushCallbackFilename = "PushCallback.ser";
+	  private final String activityCallbackFilename = "activityCallback.ser";
 	  private static Class<? extends Activity> defaultCallback = null;
+	  static Class<? extends Activity> activityCallback = null;
 	
 	  private int attemptInterval = 60000;		// Around the same as heartbeat timeout of the server
 	  private static PushCallback callback = new PushCallback();	//Default push callback handler
@@ -50,10 +52,11 @@ public class CloudPushService extends Service {
 		  
 	  };
 	  
-	  public static void setDefaultCallback(Class<? extends Activity> activity){
-		  Intent intent = new Intent(CloudEngine.getContext(), activity);
+	  public static void setDefaultCallback(Context context, Class<? extends Activity> activity){
+		  Intent intent = new Intent(context, activity);
 		  intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
 		  callback.setDefaultCallback(intent);
+		  activityCallback = activity;
 	  }
 	  
 	  
@@ -228,7 +231,8 @@ public class CloudPushService extends Service {
 			 	
 			 	if(connect){
 			 		
-			 		manageCustomCallback();			 		
+			 		manageCustomCallback();
+			 		manageActivityCallback();
 			 		// Start the service if no connection is in progress
 			 		if( state == STATE.DISCONNECTED )
 			 		{
@@ -246,6 +250,59 @@ public class CloudPushService extends Service {
 	      return START_STICKY;
 	  }
 	  
+	  private void manageActivityCallback(){
+		  
+		// check if we need to install custom handler
+	 		File file = new File(getFilesDir(), activityCallbackFilename);
+	 		if(file.exists())
+	 		{
+	 			FileInputStream fileIn = null;
+	 			ObjectInputStream inputStream = null;
+				try {
+					fileIn = new FileInputStream(file.getAbsolutePath());
+					inputStream = new ObjectInputStream(fileIn);
+					Class<? extends Activity> activity = (Class<? extends Activity>) inputStream.readObject();
+					Intent intent  = new Intent(getApplicationContext(), activity);
+					callback.setDefaultCallback(intent);
+					
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				finally{
+					
+						try{
+							if(inputStream != null)
+								inputStream.close();
+							
+							if(fileIn != null)
+								fileIn.close();
+						}
+						catch(Exception e){
+						}
+				}
+	 		}
+	 		else{
+	 			
+	 			// Check if we need to save custom callback
+	 			// Save any custom callbacks to disc
+	 			  if(activityCallback != null){
+	 				  try
+	 			      {
+	 			         FileOutputStream fileOut =
+	 			        		 openFileOutput(activityCallbackFilename, Context.MODE_PRIVATE);
+	 			       	
+	 			         ObjectOutputStream out = new ObjectOutputStream(fileOut);
+	 			         out.writeObject(activityCallback);
+	 			         out.close();
+	 			         fileOut.close();	
+	 			      }catch(IOException e)
+	 			      {
+	 			          e.printStackTrace();
+	 			      }
+	 			  }
+	 		}
+		  
+	  }
 
 	  private void manageCustomCallback(){
 		  
