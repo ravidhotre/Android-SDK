@@ -8,7 +8,7 @@ import android.webkit.CookieSyncManager;
 
 
 /**
- * This class needs to be instantiated and initialized by every app at the begginging 
+ * This class needs to be instantiated and initialized by every app at the beginning 
  * of its execution, typically in the onCreate method of its main activity. 
  */
 public class CloudEngine {
@@ -44,7 +44,7 @@ public class CloudEngine {
 		appId = app_id;
 		app_context = ctx;
 		applicationName = ctx.getResources().getString(R.string.app_name);
-		initPushService(app_id);
+		initPushService();
 		saveCredentials();
 		CookieSyncManager syncManager = CookieSyncManager.createInstance(ctx);
 		syncManager.sync();
@@ -80,7 +80,7 @@ public class CloudEngine {
 	}
 	
 	
-	private static void initPushService(String app_id) {
+	private static void initPushService() {
 		
 		CloudEngineUtils utils = CloudEngineUtils.getInstance();
 		
@@ -93,7 +93,6 @@ public class CloudEngine {
 		Log.d(TAG, "CloudEngine starting Push service");
 		//Start Push notification service
 		Intent intent = new Intent(app_context, CloudPushService.class);
-		intent.putExtra("AppId", app_id);
 		app_context.startService(intent);
 		return;
 		

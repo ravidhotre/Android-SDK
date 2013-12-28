@@ -21,7 +21,7 @@ public class PushCallback implements java.io.Serializable {
 		DisplayNotification(context, message);
 	}
 	
-	public void setDefaultCallback(Intent intent){
+	public void setActivity(Intent intent){
 		this.intent  = intent;
 	}
 	
