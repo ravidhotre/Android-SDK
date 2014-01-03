@@ -12,6 +12,8 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.HashMap;
+
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.app.Activity;
@@ -50,6 +52,20 @@ public class CloudPushService extends Service {
 		  
 	  };
 	  
+	  
+	  /**
+		 * This method allows you to define which activity of
+		 * the app will be invoked when the user clicks the
+		 * notification message 
+		 * 
+		 * @param context The application's context
+	     *            
+	     * @param activity The Class of the activity that needs to be 
+	     * 	invoked
+	     * 
+		 * @throws CloudException If invalid parameters are passed 
+	     * 
+	     */
 	  public static void setActivity(Context context, Class<? extends Activity> activity){
 		  
 		  if(activity == null){
@@ -85,7 +101,31 @@ public class CloudPushService extends Service {
 	  	  
 	  }
 	  
-	  
+	  /**
+		 * This method allows you to install a custom callback function
+		 * that will be invoked when the user clicks a notification
+		 * message. 
+		 * 
+		 * @param context The application's context
+	     *            
+	     * @param cbk The callback object which needs to be installed. The object
+	     * must be a subclass of net.getcloudengine.PushCallback. You may 
+	     * extend or override the default handler function of the PushCallback
+	     * object by defining handleMessage method of the object. The default 
+	     * handleMessage method only displays the notification in the notification area
+	     * when a message is received. The PushCallback object provided must satisfy 
+	     * certain restrictions - 
+	     * 1. The object must be serializable i.e. it should implement java.io.Serializable interface
+	     * 2. The handleMessage method does not run in the UI thread
+	     * 3. It is recommended to keep the handleMessage function as short as possible. 
+	     * If you need to do blocking I/O such as networking activities, 
+	     * it is recommended to spawn a separate thread for that purpose. 
+	     * 4. If you're declaring the handler class inside an Activity or a container class, 
+	     * please declare the class as static in order to make it Serializable
+	     * 
+		 * @throws CloudException If invalid parameters are passed 
+	     * 
+	     */
 	  public static void installCallback(Context context, PushCallback cbk){
 		  
 		  if(context == null || cbk == null){
@@ -118,7 +158,7 @@ public class CloudPushService extends Service {
 	 		
 	  }
 	  
-	  public SocketIO socket_call(String app_id)
+	  private SocketIO socket_call(String app_id)
 		{
 				String apiKey = CloudEngine.getApiKey();
 				String appId = CloudEngine.getAppId();

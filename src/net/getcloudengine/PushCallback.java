@@ -15,8 +15,18 @@ public class PushCallback implements java.io.Serializable {
 	
 	//
 	private Intent intent = new Intent();
-	//private Class<? extends Activity> activity = null;
 	
+	/**
+	 * Handle push messages received from the server. The default behaviour
+	 * of this method is to display a notification in the notification area.
+	 * If you need a custom behavior you can override or extend this function 
+	 * by subclassing PushCallback. 
+	 * 
+	 * @param context The application context
+	 * 
+	 * @param message The message received from push notification
+     * 
+     */
 	public void handleMessage(Context context, String message){
 		DisplayNotification(context, message);
 	}
