@@ -25,8 +25,12 @@ import android.util.Log;
 public class CloudQuery {
 	
 	private static final String TAG = "CloudQuery";
+	private static final int ASCENDING = 1;
+	private static final int DESCENDING = -1;
 	private String collection = null;
 	private JSONObject queryObj = new JSONObject();
+	private String orderby = null;
+	private int order = ASCENDING;
 	
 	CloudEngineUtils utils = CloudEngineUtils.getInstance();
 	
@@ -121,8 +125,28 @@ public class CloudQuery {
 			address = CloudEndPoints.queryCloudObject(collection);
 			Log.i(TAG, "Running query on server: " + queryObj.toString());
 			
+			
+			try{
+				address += "?query=" + URLEncoder.encode(queryObj.toString(), "UTF-8");
+			}
+			catch(Exception e){
+				throw new CloudException("Unable to encode query parameters");
+			}
+			
+			if(this.orderby != null){
+				
+				JSONObject orderObj = new JSONObject();
+				orderObj.put(this.orderby, this.order);
+				try{
+					address += "&orderby=" + URLEncoder.encode(orderObj.toString(), "UTF-8");
+				}
+				catch(Exception e){
+					throw new CloudException("Unable to encode query parameters");
+				}
+				
+			}
+			
 			Log.i(TAG, "connecting to endpoint : " + address);
-			address += "?query=" + URLEncoder.encode(queryObj.toString());
 			response = utils.httpRequest(address, new HttpGet());
 			Log.i(TAG, "query response received: "+ response);
 			JSONObject query_response = new JSONObject(response);
@@ -664,6 +688,43 @@ public class CloudQuery {
 			Log.e(TAG, "Error in adding query condition", e);
 			throw new CloudException("Invalid query");	
 		}
+		return this;
+	}
+	
+	
+	/**
+	 * Sets the ordering of query results. The results returned 
+	 * from the query will be arranged in ascending order of the 
+	 * values of the given key
+	 * 
+	 * @param key the name of the property of the CloudObject
+	 * 
+	 * 
+	 * @return the current query object. You can set more condition on the same
+	 * 	object
+	 * 
+	 */
+	public CloudQuery orderByAscending(String key){
+		this.order =  ASCENDING;
+		this.orderby = key;
+		return this;
+	}
+	
+	
+	/**
+	 * Sets the ordering of query results. The results returned 
+	 * from the query will be arranged in descending order of the 
+	 * values of the given key
+	 * 
+	 * @param key the name of the property of the CloudObject
+	 * 
+	 * @return the current query object. You can set more condition on the same
+	 * 	object
+	 * 
+	 */
+	public CloudQuery orderByDescending(String key){
+		this.order = DESCENDING;
+		this.orderby = key;
 		return this;
 	}
 	

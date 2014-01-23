@@ -444,7 +444,8 @@ public class CloudUser {
 	
 	/**
 	 * Creates a new account for the user on the server
-	 * in a background thread  
+	 * in a background thread. The newly created user is immediately
+	 * logged in on the server.  
      * 
      */
 	public void signUpInBackground(){
@@ -916,5 +917,4 @@ public class CloudUser {
 		
 	}
 
-	
 }
